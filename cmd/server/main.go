@@ -21,25 +21,25 @@ type CommentRequest struct {
 	Text string `json:"text"`
 }
 
-// handleGetComments retrieves all comments for a news ID
+// Получение всех комментариев для новости по ID
 func handleGetComments(w http.ResponseWriter, r *http.Request) {
-	// Extract news ID from query parameter
+	// Извлекаем ID новости из параметра запроса
 	newsIDStr := r.URL.Query().Get("id")
 	if newsIDStr == "" {
-		http.Error(w, "Missing news ID", http.StatusBadRequest)
+		http.Error(w, "Отсутствует ID новости", http.StatusBadRequest)
 		return
 	}
 
 	newsID, err := strconv.ParseInt(newsIDStr, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid news ID", http.StatusBadRequest)
+		http.Error(w, "Некорректный ID новости", http.StatusBadRequest)
 		return
 	}
 
 	comments, err := models.GetCommentsByNewsID(newsID)
 	if err != nil {
-		log.Printf("Error getting comments: %v", err)
-		http.Error(w, "Failed to retrieve comments", http.StatusInternalServerError)
+		log.Printf("Ошибка при получении комментариев: %v", err)
+		http.Error(w, "Не удалось получить комментарии", http.StatusInternalServerError)
 		return
 	}
 
@@ -47,36 +47,36 @@ func handleGetComments(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(comments)
 }
 
-// handleAddComment adds a new comment for a news ID
+// Добавление нового комментария к новости
 func handleAddComment(w http.ResponseWriter, r *http.Request) {
-	// Extract news ID from query parameter
+	// Извлекаем ID новости из параметра запроса
 	newsIDStr := r.URL.Query().Get("id")
 	if newsIDStr == "" {
-		http.Error(w, "Missing news ID", http.StatusBadRequest)
+		http.Error(w, "Отсутствует ID новости", http.StatusBadRequest)
 		return
 	}
 
 	newsID, err := strconv.ParseInt(newsIDStr, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid news ID", http.StatusBadRequest)
+		http.Error(w, "Некорректный ID новости", http.StatusBadRequest)
 		return
 	}
 
 	var req CommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Некорректный формат запроса", http.StatusBadRequest)
 		return
 	}
 
 	if req.Text == "" {
-		http.Error(w, "Comment text cannot be empty", http.StatusBadRequest)
+		http.Error(w, "Текст комментария не может быть пустым", http.StatusBadRequest)
 		return
 	}
 
 	commentID, err := models.AddComment(newsID, req.Text)
 	if err != nil {
-		log.Printf("Error adding comment: %v", err)
-		http.Error(w, "Failed to add comment", http.StatusInternalServerError)
+		log.Printf("Ошибка при добавлении комментария: %v", err)
+		http.Error(w, "Не удалось добавить комментарий", http.StatusInternalServerError)
 		return
 	}
 
@@ -91,21 +91,21 @@ func handleAddComment(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// setupRoutes configures the HTTP routes
+// Настройка маршрутов HTTP
 func setupRoutes() {
-	// Endpoint for getting comments for a specific news ID
+	// Эндпоинт для получения комментариев для конкретной новости
 	http.HandleFunc("/api/comm_news", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
 			return
 		}
 		handleGetComments(w, r)
 	})
 
-	// Endpoint for adding comments for a specific news ID
+	// Эндпоинт для добавления комментариев к конкретной новости
 	http.HandleFunc("/api/comm_add_news", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
 			return
 		}
 		handleAddComment(w, r)
@@ -113,26 +113,26 @@ func setupRoutes() {
 }
 
 func main() {
-	// Initialize database
+	// Инициализация базы данных
 	if err := models.InitDB(dbPath); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		log.Fatalf("Ошибка инициализации базы данных: %v", err)
 	}
 
-	// Setup routes
+	// Настройка маршрутов
 	setupRoutes()
 
-	// Handle graceful shutdown
+	// Обработка корректного завершения
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("Starting server on %s", addr)
+		log.Printf("Запуск сервера на %s", addr)
 		if err := http.ListenAndServe(addr, nil); err != nil {
-			log.Fatalf("Server error: %v", err)
+			log.Fatalf("Ошибка сервера: %v", err)
 		}
 	}()
 
-	// Wait for interrupt signal
+	// Ожидание сигнала прерывания
 	<-c
-	log.Println("Shutting down server...")
+	log.Println("Завершение работы сервера...")
 }
